@@ -2,7 +2,7 @@ package com.lowlevelsubmarine.applock;
 
 import android.util.Base64;
 
-public class BaseSixtyFour {
+public class B64 {
 
     public static String encode(byte[] decoded) {
         return Base64.encodeToString(decoded, Base64.DEFAULT);

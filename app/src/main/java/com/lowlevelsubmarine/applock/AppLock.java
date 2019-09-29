@@ -1,42 +1,53 @@
 package com.lowlevelsubmarine.applock;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
+import java.util.Random;
 
 public class AppLock {
 
-    private static final Cipher CIPHER = createCipher();
+    private final Cipher cipher = createCipher();
+    private final SecretKeySpec key;
 
-    public static boolean valid(IdentifierBytes idBytes, String signed, SecretKeySpec key) throws InvalidKeyException  {
+    public AppLock(byte[] key) throws InvalidKeyException {
+        this.key = new SecretKeySpec(key, "AES");
+    }
+
+    public byte[] generateKey(long salt) {
+        byte[] bytes = new byte[16];
+        new Random(salt).nextBytes(bytes);
+        return bytes;
+    }
+
+    public String sign(String unsigned) throws InvalidKeyException {
+        return B64.encode(this.encrypt(B64.decode(unsigned), this.key));
+    }
+
+    private byte[] encrypt(byte[] bytes, SecretKeySpec key) throws InvalidKeyException {
         try {
-            Bytes signedBytes = new Bytes(signed);
-            CIPHER.init(Cipher.DECRYPT_MODE, key);
-            return Arrays.equals(CIPHER.doFinal(signedBytes.getBytes()), idBytes.getBytes());
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            return cipher.doFinal(bytes);
         } catch (BadPaddingException | IllegalBlockSizeException e) {
-            throw new InternalError("Impossible error");
+            throw new InternalError(e.getMessage());
         }
     }
 
-    public String sign(IdentifierBytes idBytes, SecretKeySpec key) throws InvalidKeyException {
-        try {
-            CIPHER.init(Cipher.ENCRYPT_MODE, key);
-            return BaseSixtyFour.encode(CIPHER.doFinal(idBytes.getBytes()));
-        } catch (IllegalBlockSizeException | BadPaddingException e) {
-            throw new InternalError("Impossible error");
-        }
-    }
-
-    public static Cipher createCipher() {
+    private static Cipher createCipher() {
         try {
             return Cipher.getInstance("AES/ECB/NoPadding");
         } catch (NoSuchPaddingException | NoSuchAlgorithmException e) {
             throw new InternalError("Failed to create cipher");
+        }
+    }
+
+    private static MessageDigest createDigest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            return null;
         }
     }
 
