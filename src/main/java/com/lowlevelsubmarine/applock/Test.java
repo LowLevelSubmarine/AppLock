@@ -2,7 +2,7 @@ package com.lowlevelsubmarine.applock;
 
 public class Test {
 
-    private static final byte[] key = AppLock.generateKey(-239757427);
+    private static final byte[] key = AppLock.generateKey(-239757428);
 
     public static void main(String[] args) {
         AppLock appLock = new AppLock(key);
